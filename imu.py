@@ -5,6 +5,8 @@ import threading, math, time
 from sys import platform as _platform
 from msvcrt import getch
 import timeit
+if _platform == "linux" or _platform == "linux2":
+    from pylab import * 
 
 Kp = 2.0                 # proportional gain governs rate of convergence to accelerometer/magnetometer
 Ki = 0.01                # integral gain governs rate of convergence of gyroscope biases
@@ -22,17 +24,13 @@ def imu(acc,gyro):
   global q0, q1, q2, q3
   global Kp, Ki, harlT
   global exInt, eyInt, ezInt
-  gx = (gyro[_x]/10.0-2000)/57.3
-  gy = (gyro[_y]/10.0-2000)/57.3
-  gz = (gyro[_z]/10.0-2000)/57.3
+  gx = (gyro[_x])/57.3
+  gy = (gyro[_y])/57.3
+  gz = (gyro[_z])/57.3
   
-  #ax = acc[_x]
-  #ay = acc[_y]
-  #az = acc[_z]
-  
-  ax = acc[_x]/1000.0 - 10
-  ay = acc[_y]/1000.0 - 10
-  az = acc[_z]/1000.0 - 10
+  ax = acc[_x]
+  ay = acc[_y]
+  az = acc[_z]
      
   #v_acc = math.sqrt(ax*ax+ay*ay+az*az)
   
@@ -84,21 +82,21 @@ def imu(acc,gyro):
 speed = 0.0
 distance = 0.0
 pre_tm = 0.0
+sum_t = 0.0
 def calc_height(v_acc):
-    global speed, distance, pre_tm
+    global speed, distance, pre_tm, sum_t
     if (pre_tm-0.0001 < 0):
         pre_tm = timeit.default_timer() 
     else:
         tm_sec =  timeit.default_timer() - pre_tm
         
-        print "interval", tm_sec
-        
-        speed = (9.8 * (v_acc-0.99896))*tm_sec + speed;
+        speed = (9.8 * (v_acc-0.9998))*tm_sec + speed;
         distance += speed*tm_sec;
+        sum_t += tm_sec
         pre_tm = timeit.default_timer()
-        print pre_tm
-    return distance
-
+    return distance,sum_t,speed
+    
+    
 cnt = 0
 lengh = 0
 st = 0
@@ -148,7 +146,8 @@ def parse_uart(byte):
                     print "last byte & acc_gyr:", byte,lengh
             st = 0
 
- 
+
+    
 def get_acc_gyro(ls):
     if len(ls) == 12:
         return [(256*ls[1]+ls[0], 256*ls[3]+ls[2], 256*ls[5]+ls[4]),
@@ -157,22 +156,36 @@ def get_acc_gyro(ls):
         print "get acc error"
         return ()
         
+#t_array.append(t)
+#spd_array.append(spd)       
 def key_task():
     global ser_flag
     while True:
         z = getch()
         # escape key to exit
         if ord(z) == 0x70: # p
-            ser_flag = 0
+           ser_flag = 0
+            #plot(t_array, spd_array)
+
         elif ord(z) == 0x6F: # o
             ser_flag = 1
             if not ser.isOpen():
-                ser.open()
+               ser.open()
 def calc_task():
     sample_cnt = 0
     sum_vcc = 0
     global d_acc_gyr, pre_tm
+    cali_cnt = 0
+    cali_ax = 0.0
+    cali_ay = 0.0
+    cali_az = 0.0
+    
+    cali_gx = 0.0
+    cali_gy = 0.0
+    cali_gz = 0.0
+    fh = open("res.txt", "w")
     while 1:
+        
         if len(d_acc_gyr) != 0:
             
             [acc,gyro] = get_acc_gyro(d_acc_gyr.pop())
@@ -191,22 +204,39 @@ def calc_task():
             #print "acc_uart: %f %f %f" % (acc[_x], acc[_y], acc[_z])
             #print "acc:",ax, ay, az
             #print "gyro:", gx, gy, gz
-            pry = imu(acc,gyro)
-            #print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
-            sum_vcc += pry[3]
-            print "vcc:", sum_vcc/sample_cnt, sample_cnt
+            pry = imu([ax,ay,az],[gx,gy,gz])
             
-            print calc_height(pry[3])
+            #print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
+            #sum_vcc += pry[3]
+            #print "vcc:", sum_vcc/sample_cnt, sample_cnt
+            
+            h,t,v =  calc_height(pry[3])
+            #if cali_cnt < 100:
+            #v_acc = math.sqrt(ax*ax + ay*ay + az*az)
+            
+            #[spd, t] = calc_v(pry[3])
+            #t_array.append(t)
+            #spd_array.append(spd)
+            
+            #fh.write('%03f %03f %03f %03f %03f %03f %03f %03f\n' % (t, spd, pry[3])) 
+            print t, h, v, pry[3]
+            #fh.write('%03f %03f %03f %03f\n' % (t, spd,  pry[3], h)) 
+            fh.write('%03f %03f %03f %03f\n' % (t, h, v, pry[3])) 
+            #fh.write('{:03f,:03f}\n'.format(ax,ay))
+       
+            
+            
         else:
             time.sleep(0.01)
+    fh.close()
     
 def uart_task():
     global ser
     global ser_flag
     if _platform == "linux" or _platform == "linux2":
-       _port='/dev/ttyUSB1'
+       _port='/dev/ttyS0'
     elif _platform == "win32":
-       _port = 'com10'
+       _port = 'com1'
     ser.port = _port
     ser.baudrate=115200
     #ser = serial.Serial(
