@@ -3,7 +3,7 @@ import serial
 from collections import deque
 import threading, math, time
 from sys import platform as _platform
-from msvcrt import getch
+from getch import getch
 import timeit
 if _platform == "linux" or _platform == "linux2":
     from pylab import * 
@@ -83,6 +83,7 @@ speed = 0.0
 distance = 0.0
 pre_tm = 0.0
 sum_t = 0.0
+
 def calc_height(v_acc):
     global speed, distance, pre_tm, sum_t
     if (pre_tm-0.0001 < 0):
@@ -145,9 +146,7 @@ def parse_uart(byte):
                     #to do why would this happen
                     print "last byte & acc_gyr:", byte,lengh
             st = 0
-
-
-    
+  
 def get_acc_gyro(ls):
     if len(ls) == 12:
         return [(256*ls[1]+ls[0], 256*ls[3]+ls[2], 256*ls[5]+ls[4]),
@@ -171,6 +170,7 @@ def key_task():
             ser_flag = 1
             if not ser.isOpen():
                ser.open()
+               
 def calc_task():
     sample_cnt = 0
     sum_vcc = 0
@@ -219,7 +219,7 @@ def calc_task():
             #spd_array.append(spd)
             
             #fh.write('%03f %03f %03f %03f %03f %03f %03f %03f\n' % (t, spd, pry[3])) 
-            print t, h, v, pry[3]
+            #print t, h, v, pry[3]
             #fh.write('%03f %03f %03f %03f\n' % (t, spd,  pry[3], h)) 
             fh.write('%03f %03f %03f %03f\n' % (t, h, v, pry[3])) 
             #fh.write('{:03f,:03f}\n'.format(ax,ay))
