@@ -110,6 +110,7 @@ _y = 1
 _z = 2
 ser = serial.Serial()
 ser_flag = 1
+
 def parse_uart(byte):
     global cnt
     global lengh
@@ -154,9 +155,7 @@ def get_acc_gyro(ls):
     else:
         print "get acc error"
         return ()
-        
-#t_array.append(t)
-#spd_array.append(spd)       
+             
 def key_task():
     global ser_flag
     while True:
@@ -170,7 +169,9 @@ def key_task():
             ser_flag = 1
             if not ser.isOpen():
                ser.open()
-               
+ 
+
+d_vel_tm_buf =  deque()
 def calc_task():
     sample_cnt = 0
     sum_vcc = 0
@@ -198,7 +199,7 @@ def calc_task():
             gy = (gyro[_y]/10.0-2000);
             gz = (gyro[_z]/10.0-2000);
             
-            sample_cnt+=1;
+            #sample_cnt+=1;
             #print "sample rate:", ((sample_cnt)/(time.time() - start_time))
             
             #print "acc_uart: %f %f %f" % (acc[_x], acc[_y], acc[_z])
@@ -206,11 +207,28 @@ def calc_task():
             #print "gyro:", gx, gy, gz
             pry = imu([ax,ay,az],[gx,gy,gz])
             
+            h,t,v =  calc_height(pry[3])
+            
+            d_vel_tm_buf.append([t,v])
+            l_vel = []
+            if (gx < 15 and gy < 15 and gz < 15 and len(d_vel_tm_buf) >100 ):
+
+                a = d_vel_tm_buf[-1][1]/ d_vel_tm_buf[0][-1]
+                last_tm = 0.0
+                for val in d_vel_tm_buf:            
+                    l_vel.append([val[0] - last_tm , val[1] - val[1]*a])
+                    last_tm = val[0]
+                for val in l_vel:
+                    dis += val[1]*val[0]
+                d_vel_tm_buf.clear()
+                print dis
+                    
+            
             #print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
             #sum_vcc += pry[3]
             #print "vcc:", sum_vcc/sample_cnt, sample_cnt
             
-            h,t,v =  calc_height(pry[3])
+            #h,t,v =  calc_height(pry[3])
             #if cali_cnt < 100:
             #v_acc = math.sqrt(ax*ax + ay*ay + az*az)
             
@@ -218,9 +236,7 @@ def calc_task():
             #t_array.append(t)
             #spd_array.append(spd)
             
-            #fh.write('%03f %03f %03f %03f %03f %03f %03f %03f\n' % (t, spd, pry[3])) 
             #print t, h, v, pry[3]
-            #fh.write('%03f %03f %03f %03f\n' % (t, spd,  pry[3], h)) 
             fh.write('%03f %03f %03f %03f\n' % (t, h, v, pry[3])) 
             #fh.write('{:03f,:03f}\n'.format(ax,ay))
        
