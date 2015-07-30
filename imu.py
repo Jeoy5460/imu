@@ -196,6 +196,8 @@ def calc_task():
     dis = 0.0
     fd2 = open("origin.txt", "w")
     
+    tm_stamp = 0.0
+    pre_tm_calc = 0.0
     while 1:
         
         if len(d_acc_gyr) != 0:
@@ -218,7 +220,13 @@ def calc_task():
             #print "gyro:", gx, gy, gz
             pry = imu([ax,ay,az],[gx,gy,gz])
             
+            #tm_stamp += (timeit.default_timer() - pre_tm_calc)
+            #pre_tm_calc = timeit.default_timer() 
+            #print timeit.default_timer()
+            fd2.write('%03f %03f %03f %03f %03f %03f %03f \n' % (timeit.default_timer(), gx, gy, gz, ax, ay, az)) 
+            
             #print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
+            
             if (abs(gx) <= 50): #and abs(gy) < 15 and abs(gz) < 15
                 end_cnt += 1
                 start_cnt = 0
@@ -237,7 +245,9 @@ def calc_task():
             elif 1 == pre_st_move and 0 == st_move:
                 data_st = 0
                 calc_st = 1
-                
+            
+            data_st = 0
+            calc_st = 0            
             if 1 == data_st:
                 #print "start:", gx, gy, gz
                 t,v =  calc_speed(pry[3])
@@ -287,8 +297,8 @@ def calc_task():
        
             
             
-        else:
-            time.sleep(0.01)
+        #else:
+            #time.sleep(0.01)
     fd2.close()
     
 def uart_task():
@@ -328,10 +338,13 @@ def uart_task():
                 #print tmp_gyro
 def run():
     t_u = threading.Thread(target=uart_task)
+    t_u.deamon = True
     t_u.start()
     t_c = threading.Thread(target=calc_task)
+    t_c.deamon = True
     t_c.start()
     t_key = threading.Thread(target=key_task)
+    t_key.deamon = True
     t_key.start()
             
 if __name__ == "__main__":
