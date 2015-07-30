@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 import threading
 from collections import deque
 import serial
@@ -18,7 +20,7 @@ class UartTask(threading.Thread):
         self.chk_sum = 0
         
         self.st = 0
-        self.deanon = True
+        
     def parse_uart(self, byte):
 
         if 0 == self.st:
