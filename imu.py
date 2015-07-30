@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import serial
 from collections import deque
 import threading, math, time
 from sys import platform as _platform
@@ -77,7 +76,8 @@ def imu(acc,gyro):
   pitch  = math.asin(-2 * q1 * q3 + 2 * q0* q2)* 57.3  
   roll   = math.atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2* q2 + 1)* 57.3
   yaw    = -math.atan2(2 * q1 * q2 + 2 * q0 * q3, -2 * q2*q2 - 2 * q3 * q3 + 1)* 57.3
-  return (pitch, roll, yaw, v_acc)
+  #return (pitch, roll, yaw, v_acc)
+  return (q0, q1, q2, q3)
 
 speed = 0.0
 pre_tm = 0.0
@@ -95,57 +95,12 @@ def calc_speed(v_acc):
         pre_tm = timeit.default_timer()
     return sum_t,speed
     
-    
-cnt = 0
-lengh = 0
-st = 0
-acc_gyr = []
-d_acc_gyr = deque()
 ACC = 0
 GYRO = 1
 _x = 0
 _y = 1
 _z = 2
-ser = serial.Serial()
-ser_flag = 1
 
-def parse_uart(byte):
-    global cnt
-    global lengh
-    global st
-    global acc_gyr
-    global d_acc_gyr
-    if 0 == st:
-        if byte == 0xAA:
-            cnt = 0
-            chk_sum = 0
-            acc_gyr = []
-            st = 1
-        else:
-            st = 0
-    elif 1 == st:
-        if byte == 0x55:
-            st = 2
-        else:
-            st = 0
-    elif 2 == st:
-        cnt = byte
-        lengh = byte
-        st = 3
-    elif 3 == st:
-        if cnt  > 1:
-            cnt -= 1
-            acc_gyr.append(byte)
-        else:
-            if byte == (sum(acc_gyr)&0xFF):
-                if len(acc_gyr) != 0:
-                    d_acc_gyr.append(acc_gyr)
-                else:
-                    #ser.close()
-                    #to do why would this happen
-                    print "last byte & acc_gyr:", byte,lengh
-            st = 0
-  
 def get_acc_gyro(ls):
     if len(ls) == 12:
         return [(256*ls[1]+ls[0], 256*ls[3]+ls[2], 256*ls[5]+ls[4]),
@@ -153,38 +108,28 @@ def get_acc_gyro(ls):
     else:
         print "get acc error"
         return ()
-             
+
+import uart_task    
+u_task = uart_task.UartTask()  
+  
 def key_task():
-    global ser_flag
     while True:
         z = getch()
         # escape key to exit
         if ord(z) == 0x70: # p
-           ser_flag = 0
+           u_task.close_uart()
             #plot(t_array, spd_array)
 
         elif ord(z) == 0x6F: # o
-            ser_flag = 1
-            if not ser.isOpen():
-               ser.open()
- 
+            u_task.open_uart()
 
 d_vel_tm_buf =  deque()
-
 
 def calc_task():
     sample_cnt = 0
     sum_vcc = 0
     global d_acc_gyr, pre_tm, speed,sum_t
     cali_cnt = 0
-    cali_ax = 0.0
-    cali_ay = 0.0
-    cali_az = 0.0
-    
-    cali_gx = 0.0
-    cali_gy = 0.0
-    cali_gz = 0.0
-    
     
     st_move = 0
     pre_st_move = 0
@@ -198,11 +143,12 @@ def calc_task():
     
     tm_stamp = 0.0
     pre_tm_calc = 0.0
+    
     while 1:
         
-        if len(d_acc_gyr) != 0:
+        if len(u_task.get_d_acc_gyr()) != 0:
             
-            [acc,gyro] = get_acc_gyro(d_acc_gyr.pop())
+            [acc,gyro] = get_acc_gyro(u_task.get_d_acc_gyr().pop())
             
             ax = acc[_x]/1000.0 - 10
             ay = acc[_y]/1000.0 - 10
@@ -223,7 +169,7 @@ def calc_task():
             #tm_stamp += (timeit.default_timer() - pre_tm_calc)
             #pre_tm_calc = timeit.default_timer() 
             #print timeit.default_timer()
-            fd2.write('%03f %03f %03f %03f %03f %03f %03f \n' % (timeit.default_timer(), gx, gy, gz, ax, ay, az)) 
+            fd2.write('%03f %03f %03f %03f %03f %03f %03f %03f %03f %03f %03f\n' % (timeit.default_timer(), gx, gy, gz, ax, ay, az, pry[0],pry[1],pry[2],pry[3])) 
             
             #print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
             
@@ -301,45 +247,14 @@ def calc_task():
             #time.sleep(0.01)
     fd2.close()
     
-def uart_task():
-    global ser
-    global ser_flag
-    if _platform == "linux" or _platform == "linux2":
-       _port='/dev/ttyS0'
-    elif _platform == "win32":
-       _port = 'com1'
-    ser.port = _port
-    ser.baudrate=115200
-    #ser = serial.Serial(
-        #port='/dev/ttyUSB1',
-        #port=_port,
-        #baudrate=115200,
-        #parity=serial.PARITY_ODD,
-        #stopbits=serial.STOPBITS_TWO,
-        #bytesize=serial.SEVENBITS
-    #)
-    #ser.close()
-    ser.open()
-    #ser.isOpen()
 
-    print 'Enter your commands below.\r\nInsert "exit" to leave the application.'
-    while 1 :
-        if ser.isOpen():
-            c = ser.read(1)
-            parse_uart(ord(c))
-            
-            if ser_flag == 0:
-                ser.close()
-                print "uart close"
-            #if len(d_acc_gyr) != 0:
-                #acc_gyro = []
-                #[tmp_acc,tmp_gyro] = get_acc_gyro(d_acc_gyr.pop())
-                #print tmp_acc
-                #print tmp_gyro
+
 def run():
-    t_u = threading.Thread(target=uart_task)
-    t_u.deamon = True
-    t_u.start()
+
+    
+    u_task.deamon = True
+    u_task.start()
+    
     t_c = threading.Thread(target=calc_task)
     t_c.deamon = True
     t_c.start()
