@@ -1,4 +1,6 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 from collections import deque
 import threading, math, time
 from sys import platform as _platform
@@ -261,6 +263,8 @@ def run():
     t_key = threading.Thread(target=key_task)
     t_key.deamon = True
     t_key.start()
+    while True:
+    	time.sleep(1)
             
 if __name__ == "__main__":
     run()
