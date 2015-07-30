@@ -3,7 +3,8 @@
 import threading
 from collections import deque
 from imu import imu as imu
-import timeit
+import timeit, time
+
 
 ACC = 0
 GYRO = 1
@@ -140,7 +141,8 @@ class CalcTask(threading.Thread):
                         
                 #fh.write('{:03f,:03f}\n'.format(ax,ay))
              
-            #else:
-                #time.sleep(0.01)
+            else:
+#                print "calc sleeping"
+                time.sleep(0.01)
         fd2.close()
    

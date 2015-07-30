@@ -3,6 +3,7 @@
 import threading
 from collections import deque
 import serial
+import time
 from sys import platform as _platform
 
 class UartTask(threading.Thread):
@@ -84,9 +85,11 @@ class UartTask(threading.Thread):
             #bytesize=serial.SEVENBITS
         #)
         #ser.close()
-        self.ser.open()
-        #ser.isOpen()
-
+        try:
+            self.ser.open()
+            #ser.isOpen()
+        except :
+            print "uart is not open"
         print 'move to start'
         while 1 :
             if self.ser.isOpen():
@@ -96,4 +99,7 @@ class UartTask(threading.Thread):
                 if self.ser_flag == 0:
                     self.ser.close()
                     print "uart close"
+            else:
+#                print "uart sleeping"
+                time.sleep(1)
 
