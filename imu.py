@@ -1,21 +1,29 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import math
+
 Kp = 2.0                 # proportional gain governs rate of convergence to accelerometer/magnetometer
 Ki = 0.01                # integral gain governs rate of convergence of gyroscope biases
-halfT = 0.0025           # half the sample period				
+halfT = 0.0025           # half the sample period	
+			
 q0 = 1.0
 q1 = 0.0
 q2 = 0.0
 q3 = 0.0
+
 exInt = 0.0
 eyInt = 0.0
 ezInt = 0.0       # scaled integral error	
 
+_x = 0
+_y = 1
+_z = 2
 				   
 def imu(acc,gyro):
   global q0, q1, q2, q3
   global Kp, Ki, harlT
   global exInt, eyInt, ezInt
+  
   gx = (gyro[_x])/57.3
   gy = (gyro[_y])/57.3
   gz = (gyro[_z])/57.3
@@ -35,7 +43,7 @@ def imu(acc,gyro):
   vy = 2*(q0*q1 + q2*q3)
   vz = q0*q0 - q1*q1 - q2*q2 + q3*q3
   
-  v_acc = ax*vx + ay*vy + az*vz
+  v_acc = acc[_x]*vx + acc[_y]*vy + acc[_z]*vz
   
   ex = (ay*vz - az*vy);
   ey = (az*vx - ax*vz);
@@ -69,5 +77,7 @@ def imu(acc,gyro):
   pitch  = math.asin(-2 * q1 * q3 + 2 * q0* q2)* 57.3  
   roll   = math.atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2* q2 + 1)* 57.3
   yaw    = -math.atan2(2 * q1 * q2 + 2 * q0 * q3, -2 * q2*q2 - 2 * q3 * q3 + 1)* 57.3
+  
+  
   
   return (pitch, roll, yaw, v_acc)

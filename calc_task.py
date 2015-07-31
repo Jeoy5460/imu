@@ -1,10 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import threading
 from collections import deque
 from imu import imu as imu
 import timeit, time
-
+import math
 
 ACC = 0
 GYRO = 1
@@ -65,7 +65,7 @@ class CalcTask(threading.Thread):
         while 1:
             
             if len(self.d_acc_gyr) != 0:
-                
+            
                 [acc,gyro] = self.get_acc_gyro(self.d_acc_gyr.pop())
                 
                 ax = acc[_x]/1000.0 - 10
@@ -77,26 +77,29 @@ class CalcTask(threading.Thread):
                 gz = (gyro[_z]/10.0-2000);
                 
                 
-                print "acc_uart: %f %f %f" % (acc[_x], acc[_y], acc[_z])
-                #pry = imu([ax,ay,az],[gx,gy,gz])
+                #print "acc_uart: %f %f %f" % (acc[_x], acc[_y], acc[_z])
+                #print "acc: %f %f %f" % (ax, ay, az)
+                pry = imu([ax,ay,az],[gx,gy,gz])
                 
                 #tm_stamp += (timeit.default_timer() - pre_tm_calc)
                 #pre_tm_calc = timeit.default_timer() 
                 #print timeit.default_timer()
-                fd2.write('%03f %03f %03f %03f %03f %03f %03f\n' % (timeit.default_timer(), gx, gy, gz, ax, ay, az)) 
+                fd2.write('%03f %03f %03f %03f %03f %03f %03f %03f %03f\n' % (timeit.default_timer(), gx, gy, gz, ax, ay, az, pry[3], math.sqrt(ax*ax+ay*ay+az*az))) 
                 
+                #fd2.write('%03f %03f %03f \n' % (pry[0], pry[1], pry[2]))
+                #fd2.write('%03f %03f %03f \n' % (ax,ay,az))                 
                 #print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
                 
-                if (abs(gx) <= 50): #and abs(gy) < 15 and abs(gz) < 15
+                if (abs(gy) <= 15): #and abs(gy) < 15 and abs(gz) < 15
                     end_cnt += 1
                     start_cnt = 0
-                    if end_cnt > 100:
+                    if end_cnt > 15:
                         pre_st_move = st_move
                         st_move = 0 
                 else:
                     start_cnt += 1
                     end_cnt = 0
-                    if start_cnt > 50:
+                    if start_cnt > 15:
                         pre_st_move = st_move
                         st_move = 1
                 if 0 == pre_st_move and st_move == 1:
@@ -106,13 +109,13 @@ class CalcTask(threading.Thread):
                     data_st = 0
                     calc_st = 1
                 
-                data_st = 0
-                calc_st = 0            
+                #data_st = 0
+                #calc_st = 0            
                 if 1 == data_st:
                     #print "start:", gx, gy, gz
-                    t,v =  calc_speed(pry[3])
+                    t,v =  self.calc_speed(pry[3])
                     self.d_vel_tm_buf.append([t,v])
-                    print "tm:", t, "vel:", v, "v_acc:", pry[3]-1
+                    #print "tm:", t, "vel:", v, "v_acc:", pry[3]-1
                     #fd2.write('%03f %03f %03f %03f %03f %03f %03f %03f\n' % (t, pry[3], ax, ay, az, gx, gy, gz))  
                     
                 elif 1 == calc_st:
@@ -122,23 +125,25 @@ class CalcTask(threading.Thread):
                     self.speed = 0
                     self.pre_tm = 0.0
                     self.sum_t = 0.0
-                    
-                    a = self.d_vel_tm_buf[-1][1]/ self.d_vel_tm_buf[-1][0]
-                    last_tm = 0.0
-                    fh = open("res.txt", "a")
-                    for val in self.d_vel_tm_buf:            
-                        #l_vel.append([val[0] - last_tm , val[1] - val[0]*a])
-                        dis += (val[1] - val[0]*a)*(val[0] - last_tm)
-                        fh.write('%03f %03f %03f \n' % (val[0], val[1], val[1] - val[0]*a )) 
-                        last_tm = val[0]  
-                    
-                    self.d_vel_tm_buf.clear()
-                    fh.close()
-                    print "height:",dis
-                    dis = 0.0
-                    calc_st = 0
-                    data_st = 0
+                    if len(self.d_vel_tm_buf) != 0:
+                        a = self.d_vel_tm_buf[-1][1]/ self.d_vel_tm_buf[-1][0]
+                        last_tm = 0.0
+                        fh = open("res.txt", "a")
+                        for val in self.d_vel_tm_buf:            
+                            #l_vel.append([val[0] - last_tm , val[1] - val[0]*a])
+                            dis += (val[1] - val[0]*a)*(val[0] - last_tm)
+                            fh.write('%03f %03f %03f \n' % (val[0], val[1], val[1] - val[0]*a )) 
+                            last_tm = val[0]  
                         
+                        self.d_vel_tm_buf.clear()
+                        fh.close()
+                        print "height:",dis
+                        dis = 0.0
+                        calc_st = 0
+                        data_st = 0
+                    else:
+                        print "velocity and time buffer empty"
+                            
                 #fh.write('{:03f,:03f}\n'.format(ax,ay))
              
             else:
