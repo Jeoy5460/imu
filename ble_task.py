@@ -161,15 +161,26 @@ class MovementDelegate(DefaultDelegate):
     def get_deque(self):
         return self.d_movement
 import threading
-#class BleTask(threading.Thread):
-#
-#    def __int__(self):
-#        super(BleTask, self).__init__()
-#        self.host = "78:A5:04:86:DD:24"
-#        self.tag = SensorTag(self.host)
-#        self.d_acc_gro = deque()
-#
-#        self.tag.movement.enable()
+
+class BleTask(threading.Thread):
+    def __init__(self):
+        super(BleTask, self).__init__()
+        self.host = "78:A5:04:86:DD:24"
+        self.tag = SensorTag(self.host)
+        self.d_acc_gro = deque()
+        self.delegate = MovementDelegate()
+        self.tag.setDelegate(self.delegate)
+        self.tag.movement.enable()
+
+    def get_deque(self):
+        return self.delegate.d_movement
+
+    def run(self):
+        while True:
+            self.tag.waitForNotifications(0.02)
+        self.tag.disconnect()
+        del self.tag
+
 def run():
     host = "78:A5:04:86:DD:24"
     tag = SensorTag(host)
