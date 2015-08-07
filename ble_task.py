@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from btle import UUID, Peripheral, DefaultDelegate
+from bluepy.btle import UUID, Peripheral, DefaultDelegate
 import struct
 import math
 
@@ -39,36 +39,6 @@ class SensorBase:
 def calcPoly(coeffs, x):
     return coeffs[0] + (coeffs[1]*x) + (coeffs[2]*x*x)
 
-class IRTemperatureSensor(SensorBase):
-    svcUUID  = _TI_UUID(0xAA00)
-    dataUUID = _TI_UUID(0xAA01)
-    ctrlUUID = _TI_UUID(0xAA02)
-
-    zeroC = 273.15 # Kelvin
-    tRef  = 298.15
-    Apoly = [1.0,      1.75e-3, -1.678e-5]
-    Bpoly = [-2.94e-5, -5.7e-7,  4.63e-9]
-    Cpoly = [0.0,      1.0,      13.4]
-
-    def __init__(self, periph):
-        SensorBase.__init__(self, periph)
-        self.S0 = 6.4e-14
-
-    def read(self):
-        '''Returns (ambient_temp, target_temp) in degC'''
-
-        # See http://processors.wiki.ti.com/index.php/SensorTag_User_Guide#IR_Temperature_Sensor
-        (rawVobj, rawTamb) = struct.unpack('<hh', self.data.read())
-        tAmb = rawTamb / 128.0
-        Vobj = 1.5625e-7 * rawVobj
-
-        tDie = tAmb + self.zeroC
-        S   = self.S0 * calcPoly(self.Apoly, tDie-self.tRef)
-        Vos = calcPoly(self.Bpoly, tDie-self.tRef)
-        fObj = calcPoly(self.Cpoly, Vobj-Vos)
-
-        tObj = math.pow( math.pow(tDie,4.0) + (fObj/S), 0.25 )
-        return (tAmb, tObj - self.zeroC)
 
 
 class AccelerometerSensor(SensorBase):
@@ -83,84 +53,6 @@ class AccelerometerSensor(SensorBase):
         '''Returns (x_accel, y_accel, z_accel) in units of g'''
         x_y_z = struct.unpack('bbb', self.data.read())
         return tuple([ (val/64.0) for val in x_y_z ])
-
-class HumiditySensor(SensorBase):
-    svcUUID  = _TI_UUID(0xAA20)
-    dataUUID = _TI_UUID(0xAA21)
-    ctrlUUID = _TI_UUID(0xAA22)
-
-    def __init__(self, periph):
-        SensorBase.__init__(self, periph)
-
-    def read(self):
-        '''Returns (ambient_temp, rel_humidity)'''
-        (rawT, rawH) = struct.unpack('<HH', self.data.read())
-        temp = -46.85 + 175.72 * (rawT / 65536.0)
-        RH = -6.0 + 125.0 * ((rawH & 0xFFFC)/65536.0)
-        return (temp, RH)
-
-
-class MagnetometerSensor(SensorBase):
-    svcUUID  = _TI_UUID(0xAA30)
-    dataUUID = _TI_UUID(0xAA31)
-    ctrlUUID = _TI_UUID(0xAA32)
-
-    def __init__(self, periph):
-        SensorBase.__init__(self, periph)
-
-    def read(self):
-        '''Returns (x, y, z) in uT units'''
-        x_y_z = struct.unpack('<hhh', self.data.read())
-        return tuple([ 1000.0 * (v/32768.0) for v in x_y_z ])
-        # Revisit - some absolute calibration is needed
-
-class BarometerSensor(SensorBase):
-    svcUUID  = _TI_UUID(0xAA40)
-    dataUUID = _TI_UUID(0xAA41)
-    ctrlUUID = _TI_UUID(0xAA42)
-    calUUID  = _TI_UUID(0xAA43)
-    sensorOn = None
-
-    def __init__(self, periph):
-       SensorBase.__init__(self, periph)
-
-    def enable(self):
-        SensorBase.enable(self)
-        self.calChr = self.service.getCharacteristics(self.calUUID) [0]
-
-        # Read calibration data
-        self.ctrl.write( struct.pack("B", 0x02), True )
-        (c1,c2,c3,c4,c5,c6,c7,c8) = struct.unpack("<HHHHhhhh", self.calChr.read())
-        self.c1_s = c1/float(1 << 24)
-        self.c2_s = c2/float(1 << 10)
-        self.sensPoly = [ c3/1.0, c4/float(1 << 17), c5/float(1<<34) ]
-        self.offsPoly = [ c6*float(1<<14), c7/8.0, c8/float(1<<19) ]
-        self.ctrl.write( struct.pack("B", 0x01), True )
-
-
-    def read(self):
-        '''Returns (ambient_temp, pressure_millibars)'''
-        (rawT, rawP) = struct.unpack('<hH', self.data.read())
-        temp = (self.c1_s * rawT) + self.c2_s
-        sens = calcPoly( self.sensPoly, float(rawT) )
-        offs = calcPoly( self.offsPoly, float(rawT) )
-        pres = (sens * rawP + offs) / (100.0 * float(1<<14))
-        return (temp,pres)
-
-
-class GyroscopeSensor(SensorBase):
-    svcUUID  = _TI_UUID(0xAA50)
-    dataUUID = _TI_UUID(0xAA51)
-    ctrlUUID = _TI_UUID(0xAA52)
-    sensorOn = struct.pack("B",0x07)
-
-    def __init__(self, periph):
-       SensorBase.__init__(self, periph)
-
-    def read(self):
-        '''Returns (x,y,z) rate in deg/sec'''
-        x_y_z = struct.unpack('<hhh', self.data.read())
-        return tuple([ 250.0 * (v/32768.0) for v in x_y_z ])
 
 class KeypressSensor(SensorBase):
     svcUUID = UUID(0xFFE0)
@@ -179,12 +71,7 @@ class SensorTag(Peripheral):
     def __init__(self,addr):
         Peripheral.__init__(self,addr)
         # self.discoverServices()
-        self.IRtemperature = IRTemperatureSensor(self)
         self.accelerometer = AccelerometerSensor(self)
-        self.humidity = HumiditySensor(self)
-        self.magnetometer = MagnetometerSensor(self)
-        self.barometer = BarometerSensor(self)
-        self.gyroscope = GyroscopeSensor(self)
         self.keypress = KeypressSensor(self)
         self.movement = MovementSensor(self)
 
@@ -253,12 +140,34 @@ class MovementSensor(SensorBase):
 
     def read(self):
         '''Returns (x_accel, y_accel, z_accel) in units of g'''
-#        dt = self.data.read()
-#        print (len(dt))
         x_y_z = struct.unpack('hhhhhhh', self.data.read())
         return tuple([ (val) for val in x_y_z ])
 
-#class ble_task()
+from collections import deque
+import threading
+#class BleTask(threading.Thread):
+#
+#    def __int__(self):
+#        super(BleTask, self).__init__()
+#        self.host = "78:A5:04:86:DD:24"
+#        self.tag = SensorTag(self.host)
+#        self.d_acc_gro = deque()
+#
+#        self.tag.movement.enable()
+def run():
+    host = "78:A5:04:86:DD:24"
+    tag = SensorTag(host)
+    d_acc_gro = deque()
+    while True:
+        self.tag.movement.enable()
+        data = tag.movement.read()[0:6]
+        #self.d_acc_gro.append(data)
+        print("movement: ", data)
+        tag.waitForNotifications(0.02)
+    tag.disconnect()
+    del self.tag
+
+    
 if __name__ == "__main__":
     import time
     import sys

@@ -42,6 +42,8 @@ class CalcTask(threading.Thread):
         if len(ls) == 12:
             return [(256*ls[1]+ls[0], 256*ls[3]+ls[2], 256*ls[5]+ls[4]),
                     (256*ls[7]+ls[6], 256*ls[9]+ls[8], 256*ls[11]+ls[10])]
+        elif len(ls) == 6:
+            return [(ls[0], ls[1], ls[2]), (ls[3], ls[4], ls[5])]
         else:
             print "get acc error"
             return ()  
@@ -78,17 +80,17 @@ class CalcTask(threading.Thread):
                 
                 
                 #print "acc_uart: %f %f %f" % (acc[_x], acc[_y], acc[_z])
-                #print "acc: %f %f %f" % (ax, ay, az)
+                print "acc: %f %f %f" % (ax, ay, az)
                 pry = imu([ax,ay,az],[gx,gy,gz])
                 
                 #tm_stamp += (timeit.default_timer() - pre_tm_calc)
                 #pre_tm_calc = timeit.default_timer() 
                 #print timeit.default_timer()
-                fd2.write('%03f %03f %03f %03f %03f %03f %03f %03f %03f\n' % (timeit.default_timer(), gx, gy, gz, ax, ay, az, pry[3], math.sqrt(ax*ax+ay*ay+az*az))) 
+#                fd2.write('%03f %03f %03f %03f %03f %03f %03f %03f %03f\n' % (timeit.default_timer(), gx, gy, gz, ax, ay, az, pry[3], math.sqrt(ax*ax+ay*ay+az*az))) 
                 
                 #fd2.write('%03f %03f %03f \n' % (pry[0], pry[1], pry[2]))
                 #fd2.write('%03f %03f %03f \n' % (ax,ay,az))                 
-                #print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
+                print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
                 
                 if (abs(gy) <= 15): #and abs(gy) < 15 and abs(gz) < 15
                     end_cnt += 1
