@@ -94,6 +94,7 @@ class KeypressDelegate(DefaultDelegate):
     def handleNotification(self, hnd, data):
         # NB: only one source of notifications at present
         # so we can ignore 'hnd'.
+        print ("key deleg")
         val = struct.unpack("B", data)[0]
         down = (val & ~self.lastVal) & self.ALL_BUTTONS
         if down != 0:
@@ -119,7 +120,7 @@ class MovementSensor(SensorBase):
 
     def enable(self):
         if self.service is None:
-            
+            self.periph.writeCharacteristic(49, struct.pack('<bb', 0x01, 0x00))
             #for uuids,val in  (self.periph.discoverServices()):
             #print type(self.periph.discoverServices())
                 #print ("srv: ",srv)
@@ -143,7 +144,22 @@ class MovementSensor(SensorBase):
         x_y_z = struct.unpack('hhhhhhh', self.data.read())
         return tuple([ (val) for val in x_y_z ])
 
+
 from collections import deque
+class MovementDelegate(DefaultDelegate):
+    def __init__(self):
+        DefaultDelegate.__init__(self)
+        self.d_movement = deque()
+        
+
+    def handleNotification(self, hnd, data):
+        # NB: only one source of notifications at present
+        # so we can ignore 'hnd'.
+#        print ("deleg:",data)
+        data = struct.unpack('hhhhhhh', data)
+        self.d_movement.append(data[0:6])
+    def get_deque(self):
+        return self.d_movement
 import threading
 #class BleTask(threading.Thread):
 #
@@ -211,6 +227,7 @@ if __name__ == "__main__":
     #    tag.keypress.enable()
     #    tag.setDelegate(KeypressDelegate())
     if arg.all:
+        tag.setDelegate( MovementDelegate())
         tag.movement.enable()
 
     # Some sensors (e.g., temperature, accelerometer) need some time for initialization.
@@ -234,7 +251,8 @@ if __name__ == "__main__":
        if counter >= arg.count and arg.count != 0:
            break
        if arg.all:
-           print("movement: ", tag.movement.read())
+           #print("movement: ", tag.movement.read())
+           pass
        counter += 1
        #tag.waitForNotifications(arg.t)
        tag.waitForNotifications(0.02)

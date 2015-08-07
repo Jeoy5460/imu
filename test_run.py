@@ -36,6 +36,8 @@ def run():
     host = "78:A5:04:86:DD:24"
     tag = ble_task.SensorTag(host)
     ble_acc_gro = deque()
+    m_delegate = ble_task.MovementDelegate()
+    tag.setDelegate(m_delegate)
     tag.movement.enable()
 
     #u_task.setDaemon(True)
@@ -43,6 +45,7 @@ def run():
 
     c_task.setDaemon(True)
     #c_task.set_d_acc_gyr(u_task.get_d_acc_gyr())
+    ble_acc_gro = m_delegate.get_deque()
     c_task.set_d_acc_gyr(ble_acc_gro)
     
     
@@ -53,11 +56,9 @@ def run():
     #u_task.start()
 #    t_key.start()
     #b_task.start()
-    print "here"
     while True:
-        data = tag.movement.read()[0:6]
-        ble_acc_gro.append(data)
-        print("movement: ", data)
+        #data = tag.movement.read()[0:6]
+       # print("movement: ", data)
         tag.waitForNotifications(0.02)
 #        time.sleep(1)
     tag.disconnect()
