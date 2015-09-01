@@ -10,18 +10,18 @@ class UartTask(threading.Thread):
     def __init__(self):
         super(UartTask, self).__init__()
         self.ser = serial.Serial()
-        
+
         self.ser_flag = 1
-        
+
         self.acc_gyr = []
         self.d_acc_gyr = deque()
-        
+
         self.cnt = 0
         self.lengh = 0
         self.chk_sum = 0
-        
+
         self.st = 0
-        
+
     def parse_uart(self, byte):
 
         if 0 == self.st:
@@ -50,16 +50,16 @@ class UartTask(threading.Thread):
                     if len(self.acc_gyr) != 0:
                         self.d_acc_gyr.append(self.acc_gyr)
                         self.acc_gyr = []
-                        
+
                     else:
                         #ser.close()
                         #to do why would this happen
                         print "last byte & acc_gyr:", byte,lengh
                 self.st = 0
-                
+
     def get_d_acc_gyr(self):
         return self.d_acc_gyr
-      
+
     def close_uart(self):
         self.ser_flag = 0
 
@@ -67,7 +67,7 @@ class UartTask(threading.Thread):
         if not self.ser.isOpen():
             self.ser_flag = 1
             self.ser.open()
-        
+
     def run(self):
         _port = '/dev/ttyUSB0'
         if _platform == "linux" or _platform == "linux2":
@@ -95,7 +95,7 @@ class UartTask(threading.Thread):
             if self.ser.isOpen():
                 c = self.ser.read(1)
                 self.parse_uart(ord(c))
-                
+
                 if self.ser_flag == 0:
                     self.ser.close()
                     print "uart close"

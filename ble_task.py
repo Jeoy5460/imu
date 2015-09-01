@@ -60,7 +60,7 @@ class KeypressSensor(SensorBase):
 
     def __init__(self, periph):
         SensorBase.__init__(self, periph)
- 
+
     def enable(self):
         self.periph.writeCharacteristic(0x60, struct.pack('<bb', 0x01, 0x00))
 
@@ -81,11 +81,11 @@ class KeypressDelegate(DefaultDelegate):
     BUTTON_R = 0x01
     ALL_BUTTONS = (BUTTON_L | BUTTON_R)
 
-    _button_desc = { 
+    _button_desc = {
         BUTTON_L : "Left button",
         BUTTON_R : "Right button",
         ALL_BUTTONS : "Both buttons"
-    } 
+    }
 
     def __init__(self):
         DefaultDelegate.__init__(self)
@@ -130,7 +130,7 @@ class MovementSensor(SensorBase):
             self.service = srvs[uuid]
 
             print srvs[uuid]
-             
+
             #self.service = self.periph.getServiceByUUID(self.svcUUID)
         if self.ctrl is None:
             self.ctrl = self.service.getCharacteristics(self.ctrlUUID) [0]
@@ -150,7 +150,7 @@ class MovementDelegate(DefaultDelegate):
     def __init__(self):
         DefaultDelegate.__init__(self)
         self.d_movement = deque()
-        
+
 
     def handleNotification(self, hnd, data):
         # NB: only one source of notifications at present
@@ -165,7 +165,8 @@ import threading
 class BleTask(threading.Thread):
     def __init__(self):
         super(BleTask, self).__init__()
-        self.host = "78:A5:04:86:DD:24"
+#        self.host = "78:A5:04:86:DD:24"
+        self.host = "F4:B8:5E:EE:66:6F"
         self.tag = SensorTag(self.host)
         self.d_acc_gro = deque()
         self.delegate = MovementDelegate()
@@ -177,7 +178,7 @@ class BleTask(threading.Thread):
 
     def run(self):
         while True:
-            self.tag.waitForNotifications(0.02)
+            self.tag.waitForNotifications(1)
         self.tag.disconnect()
         del self.tag
 
@@ -194,7 +195,7 @@ def run():
     tag.disconnect()
     del self.tag
 
-    
+
 if __name__ == "__main__":
     import time
     import sys
