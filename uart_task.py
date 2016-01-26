@@ -54,10 +54,10 @@ class UartTask(threading.Thread):
                     else:
                         #ser.close()
                         #to do why would this happen
-                        print "last byte & acc_gyr:", byte,lengh
+                        print "last byte & acc_gyr:", byte,self.lengh
                 self.st = 0
 
-    def get_d_acc_gyr(self):
+    def get_deque(self):
         return self.d_acc_gyr
 
     def close_uart(self):
@@ -72,22 +72,14 @@ class UartTask(threading.Thread):
         _port = '/dev/ttyUSB0'
         if _platform == "linux" or _platform == "linux2":
            _port='/dev/ttyUSB0'
+           print _port
         elif _platform == "win32":
            _port = 'com1'
         self.ser.port = _port
         self.ser.baudrate=115200
-        #ser = serial.Serial(
-            #port='/dev/ttyUSB1',
-            #port=_port,
-            #baudrate=115200,
-            #parity=serial.PARITY_ODD,
-            #stopbits=serial.STOPBITS_TWO,
-            #bytesize=serial.SEVENBITS
-        #)
         #ser.close()
         try:
             self.ser.open()
-            #ser.isOpen()
         except :
             print "uart is not open"
         print 'move to start'
@@ -100,6 +92,6 @@ class UartTask(threading.Thread):
                     self.ser.close()
                     print "uart close"
             else:
-#                print "uart sleeping"
-                time.sleep(1)
+                #time.sleep(0.001)
+                pass
 

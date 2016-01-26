@@ -5,6 +5,7 @@ from collections import deque
 from imu import imu as imu
 import timeit, time
 import math
+import numpy as np
 
 ACC = 0
 GYRO = 1
@@ -62,8 +63,11 @@ class CalcTask(threading.Thread):
         tm_stamp = 0.0
         pre_tm_calc = 0.0
 
-        fd2 = open("origin.txt", "w")
-
+        #fd2 = open("origin.txt", "w")
+        cnt = 0
+        arr = []
+        arr_mean = 0
+        arr_std  = 0
         while 1:
 
             if len(self.d_acc_gyr) != 0:
@@ -80,9 +84,11 @@ class CalcTask(threading.Thread):
 
 
                 #print "acc_uart: %f %f %f" % (acc[_x], acc[_y], acc[_z])
+                #print "%f %f %f %f %f %f" % (ax, ay, az, gx, gy, gz)
+                #print "%f %f %f %f %f %f" % (ax )
                 print "%f %f %f" % (ax, ay, az)
-                """
                 pry = imu([ax,ay,az],[gx,gy,gz])
+                #spd = self.calc_speed(v_acc)
 
                 #tm_stamp += (timeit.default_timer() - pre_tm_calc)
                 #pre_tm_calc = timeit.default_timer()
@@ -91,8 +97,8 @@ class CalcTask(threading.Thread):
 
                 #fd2.write('%03f %03f %03f \n' % (pry[0], pry[1], pry[2]))
                 #fd2.write('%03f %03f %03f \n' % (ax,ay,az))
-                #print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
-
+        #       print "pitch:%f roll:%f yaw:%f v_acc:%f" %(pry[0],pry[1],pry[2],pry[3])
+"""
                 if (abs(gy) <= 15): #and abs(gy) < 15 and abs(gz) < 15
                     end_cnt += 1
                     start_cnt = 0
@@ -148,9 +154,9 @@ class CalcTask(threading.Thread):
                         print "velocity and time buffer empty"
 
                 #fh.write('{:03f,:03f}\n'.format(ax,ay))
-                """
-            else:
-#                print "calc sleeping"
-                time.sleep(0.01)
-        fd2.close()
+"""
+         #   else:
+         #       print "calc sleeping"
+               # time.sleep(0.01)
+            #fd2.close()
 

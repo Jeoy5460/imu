@@ -166,7 +166,8 @@ class BleTask(threading.Thread):
     def __init__(self):
         super(BleTask, self).__init__()
 #        self.host = "78:A5:04:86:DD:24"
-        self.host = "F4:B8:5E:EE:66:6F"
+#        self.host = "F4:B8:5E:EE:66:6F"
+        self.host = "D4:F5:13:77:24:04"
         self.tag = SensorTag(self.host)
         self.d_acc_gro = deque()
         self.delegate = MovementDelegate()
@@ -183,7 +184,7 @@ class BleTask(threading.Thread):
         del self.tag
 
 def run():
-    host = "78:A5:04:86:DD:24"
+    host = "78:A5:04:86:DC:01"
     tag = SensorTag(host)
     d_acc_gro = deque()
     while True:
