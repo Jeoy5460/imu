@@ -92,6 +92,5 @@ class UartTask(threading.Thread):
                     self.ser.close()
                     print "uart close"
             else:
-                #time.sleep(0.001)
-                pass
-
+                #print 'uart getting'
+                time.sleep(0.001)

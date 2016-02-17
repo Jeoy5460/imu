@@ -156,7 +156,7 @@ class MovementDelegate(DefaultDelegate):
         # NB: only one source of notifications at present
         # so we can ignore 'hnd'.
 #        print ("deleg:",data)
-        data = struct.unpack('hhhhhhh', data)
+        data = struct.unpack('HHHHHHH', data)
         self.d_movement.append(data[0:6])
     def get_deque(self):
         return self.d_movement
@@ -167,7 +167,8 @@ class BleTask(threading.Thread):
         super(BleTask, self).__init__()
 #        self.host = "78:A5:04:86:DD:24"
 #        self.host = "F4:B8:5E:EE:66:6F"
-        self.host = "D4:F5:13:77:24:04"
+        self.host = "D4:F5:13:77:1A:7C"
+        #self.host = "C4:BE:84:05:7C:E0"
         self.tag = SensorTag(self.host)
         self.d_acc_gro = deque()
         self.delegate = MovementDelegate()
@@ -182,19 +183,6 @@ class BleTask(threading.Thread):
             self.tag.waitForNotifications(1)
         self.tag.disconnect()
         del self.tag
-
-def run():
-    host = "78:A5:04:86:DC:01"
-    tag = SensorTag(host)
-    d_acc_gro = deque()
-    while True:
-        self.tag.movement.enable()
-        data = tag.movement.read()[0:6]
-        #self.d_acc_gro.append(data)
-        print("movement: ", data)
-        tag.waitForNotifications(0.02)
-    tag.disconnect()
-    del self.tag
 
 
 if __name__ == "__main__":

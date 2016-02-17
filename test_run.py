@@ -6,6 +6,7 @@ import threading, math, time
 from sys import platform as _platform
 from getch import getch
 import timeit
+import os
 if _platform == "linux" or _platform == "linux2":
     from pylab import *
 
@@ -28,15 +29,33 @@ def key_task():
 import ble_task
 import calc_task
 import multiprocessing
-
-def run():
-    p = 1
-    if p == 1:
+class FileTask():
+    def __init__(self, fname=''):
+        self.fname = fname
+        self.d_dat = deque()
+    def get_deque(self):
+        if len(self.fname)!=0 and os.path.isfile(self.fname):
+            fd_dat= open(self.fname, 'r')
+            data = [map(float,line.split()) for line in fd_dat]
+            m_data = np.array(data, np.float16)
+            for val in m_data[:,[0,1]]:
+                print val
+                self.d_dat.append(val)
+        else:
+            print "File not existed"
+        return self.d_dat
+ 
+def run(flag,fname=''):
+    if flag == 1:
         dat_task = uart_task.UartTask()
-    elif p == 2:
+    elif flag == 2:
         dat_task = ble_task.BleTask()
-
-    dat_task.setDaemon(True)
+    elif flag == 3:
+        dat_task = FileTask(fname)
+               
+    if isinstance(dat_task,threading.Thread):
+        print "It's a threading"
+        dat_task.setDaemon(True)
     deq_data = dat_task.get_deque()
 
 
@@ -48,10 +67,11 @@ def run():
     #t_key = threading.Thread(target=key_task)
     #t_key.deamon = True
 
+    if isinstance(dat_task,threading.Thread):
+        print 'threading'
+        dat_task.start()
     c_task.start()
-    dat_task.start()
     #t_key.start()
-    #dat_task.start()
     while True:
         #data = tag.movement.read()[0:6]
         #print("movement: ", data)
@@ -60,4 +80,15 @@ def run():
     #tag.disconnect()
     #del self.tag
 if __name__ == "__main__":
-    run()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', action='store_true')
+    parser.add_argument('-u', action='store_true')
+    parser.add_argument('-f', nargs=1) 
+    args = parser.parse_args() 
+    if args.u:
+        run(1)
+    elif args.b:
+        run(2)
+    elif len(args.f):
+        run(3,args.f[0])
