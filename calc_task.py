@@ -57,7 +57,7 @@ class CalcTask(threading.Thread):
             for val in vel_buf:
                 cur_tm += val[0]
                 dis += (val[1] - cur_tm*a)*(val[0]/1000.0)
-            print dis
+            #print dis
             return dis
         else:
             return 0
@@ -70,11 +70,11 @@ class CalcTask(threading.Thread):
         if len(ls) == 12:
             return [(256*ls[1]+ls[0], 256*ls[3]+ls[2], 256*ls[5]+ls[4]),
                     (256*ls[7]+ls[6], 256*ls[9]+ls[8], 256*ls[11]+ls[10]),()]
-        elif len(ls) == 6:
-            #return [(ls[0], ls[1], ls[2]), (ls[3], ls[4], ls[5])]
-            return [(ls[0] + ls[1]*256*256), (ls[2]), (ls[3], ls[4], ls[5])]
         elif len(ls) == 3:
-            return [(ls[0]), (ls[1]), ()]
+            return (ls[0],ls[1],ls[2]) 
+            
+        elif len(ls) == 2:
+            return (ls[0]), (ls[1])
         else:
             print "get acc error"
             return []
@@ -108,13 +108,13 @@ class CalcTask(threading.Thread):
         elif self.st == 1:
             if (not is_stationary):
                 (interval, spd) = self.calc_speed(tm_stamp, g_acc)
-                print 't & speed', interval, g_acc 
+                #print 't & speed', interval, g_acc 
                 self.vel.append((interval, spd))
             else:
                 if len(self.vel) != 0:
-                    print "start"
+                    #print "start"
                     self.calc_height(self.vel)
-                    print "end"
+                    #print "end"
                     self.vel = []
                 self.calc_init = True
                 self.st = 0
@@ -125,11 +125,12 @@ class CalcTask(threading.Thread):
 
         while 1:
             if len(self.d_acc_gyr) != 0:
-                [tm_stamp, v_acc, acc] = self.get_acc_gyro(self.d_acc_gyr.popleft())
+                #tm_v:0:time stamp 1: v_acc
+                tm_v = self.get_acc_gyro(self.d_acc_gyr.popleft())
 
-                ax = acc[_x]/1000.0 - 10
-                ay = acc[_y]/1000.0 - 10
-                az = acc[_z]/1000.0 - 10
+                #ax = acc[_x]/1000.0 - 10
+                #ay = acc[_y]/1000.0 - 10
+                #az = acc[_z]/1000.0 - 10
 
                 #gx = (gyro[_x]/10.0-2000);
                 #gy = (gyro[_y]/10.0-2000);
@@ -139,8 +140,10 @@ class CalcTask(threading.Thread):
                 #pry = imu([ax,ay,az],[gx,gy,gz])
                 #sum_acc = math.sqrt(ax*ax+ay*ay+az*az)
                 #fd2.write('%03f %03f %03f %03f %03f %03f %03f %03f\n' % (t, pry[3], ax, ay, az, gx, gy, gz))
-                g_acc = v_acc/1000.0-10
-                self.process_data(tm_stamp, g_acc)
+                
+                v_acc = tm_v[1]/1000.0-10
+                print v_acc
+                self.process_data(tm_v[0], v_acc)
 
             else:
                 time.sleep(0.001)

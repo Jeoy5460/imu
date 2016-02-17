@@ -68,7 +68,6 @@ def run(flag,fname=''):
     #t_key.deamon = True
 
     if isinstance(dat_task,threading.Thread):
-        print 'threading'
         dat_task.start()
     c_task.start()
     #t_key.start()

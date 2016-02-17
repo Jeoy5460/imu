@@ -156,8 +156,11 @@ class MovementDelegate(DefaultDelegate):
         # NB: only one source of notifications at present
         # so we can ignore 'hnd'.
 #        print ("deleg:",data)
-        data = struct.unpack('HHHHHHH', data)
-        self.d_movement.append(data[0:6])
+        data =  struct.unpack('HHHHHHH', data)
+        ls = [(data[0] + data[1]*256*256), (data[2]), (data[3], data[4], data[5])]
+        with open ('up.dat', 'a+') as fd:
+            print>>fd, ls[0], ls[1], data[3], data[4], data[5]
+        self.d_movement.append(ls)
     def get_deque(self):
         return self.d_movement
 import threading
