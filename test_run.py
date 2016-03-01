@@ -33,14 +33,15 @@ class FileTask():
     def __init__(self, fname=''):
         self.fname = fname
         self.d_dat = deque()
+
     def get_deque(self):
         if len(self.fname)!=0 and os.path.isfile(self.fname):
             fd_dat= open(self.fname, 'r')
-            data = [map(float,line.split()) for line in fd_dat]
-            m_data = np.array(data, np.float16)
-            for val in m_data[:,[0,1]]:
-                print val
-                self.d_dat.append(val)
+            data = [map(float32,line.split()) for line in fd_dat]
+            m_data = np.array(data,float32)
+            for val in m_data[:,[0,1,2,3,4]]:
+                print "mdata", val
+                self.d_dat.append([val[0], val[1], (val[2], val[3], val[4])])
         else:
             print "File not existed"
         return self.d_dat

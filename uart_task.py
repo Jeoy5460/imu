@@ -48,7 +48,12 @@ class UartTask(threading.Thread):
             else:
                 if byte == (sum(self.acc_gyr)&0xFF):
                     if len(self.acc_gyr) != 0:
-                        self.d_acc_gyr.append(self.acc_gyr)
+                        arr = acc_gyr
+                        #self.d_acc_gyr.append(self.acc_gyr)
+                        udata = [(256*arr[1]+arr[0], 256*arr[3]+arr[2], 256*arr[5]+arr[4]),
+                                    (256*arr[7]+arr[6], 256*arr[9]+arr[8], 256*arr[11]+arr[10]),
+                                    ()]
+                        self.d_acc_gyr.append(udata)
                         self.acc_gyr = []
 
                     else:

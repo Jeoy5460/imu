@@ -1,3 +1,6 @@
 #!/usr/bin/bash
-#./test_run.py "-fup.dat"
+rm -rf filt.dat
+rm -rf up.dat
+#./test_run.py "-fup1.dat"
+#./plot_imu.py
 ./test_run.py "-b"  
