@@ -120,7 +120,7 @@ class CalcTask(threading.Thread):
             
             std = np.std(list(self.que_det))
             #if stationary[-1] == 1:
-            if std< 0.03:
+            if std< 0.005:
                 self.is_stationary = 1
             else:
                 self.is_stationary = 0
