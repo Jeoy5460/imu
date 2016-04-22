@@ -156,10 +156,16 @@ class MovementDelegate(DefaultDelegate):
         # NB: only one source of notifications at present
         # so we can ignore 'hnd'.
 #        print ("deleg:",data)
-        data =  struct.unpack('HHHHHHHHHH', data)
-        ls = [(data[0] + data[1]*256*256), (data[2]), (data[3], data[4], data[5]),(data[6],data[7], data[8])]
+        #data =  struct.unpack('HHHhhhhHHH', data)
+        data =  struct.unpack('HHhhhhhHHH', data)
+        #ls = [(data[0] + data[1]*256*256), (data[2]), (data[3], data[4], data[5]),(data[6],data[7], data[8])]
+        ls = [(data[0] + data[1]*256*256), (data[2], data[3], data[4]),(data[6],data[7], data[8])]
         with open ('up.dat', 'a+') as fd:
-            print>>fd, ls[0], ls[1], data[3], data[4], data[5], data[6], data[7], data[8]
+            #print>>fd, ls[0], ls[1], data[3], data[4], data[5], data[6], data[7], data[8]
+            #print ls[0], ls[1], data[3]/100.0, data[4]/100.0, data[5]/100.0, data[6]/100.0, data[7], data[8]
+            print ls[0], data[2]/100.0,data[3]/100.0,data[4]/100.0  
+            print>>fd, data[3]/100.0, data[4]/100.0, data[5]/100.0, data[6]/100.0, (math.atan2(data[3],data[5])*57.3+180)%360
+            #print data[3]/100.0, data[4]/100.0, data[5]/100.0, data[6]/100.0, (math.atan2(data[3],data[5])*57.3+180)%360
         self.d_movement.append(ls)
     def get_deque(self):
         return self.d_movement
@@ -168,8 +174,8 @@ import threading
 class BleTask(threading.Thread):
     def __init__(self):
         super(BleTask, self).__init__()
-        self.host = "D4:F5:13:77:1A:7C"
-        #self.host = "C4:BE:84:05:7C:E0"
+        #self.host = "D4:F5:13:77:1A:7C"
+        self.host = "C4:BE:84:05:7C:E0"
         self.tag = SensorTag(self.host)
         self.d_acc_gro = deque()
         self.delegate = MovementDelegate()
